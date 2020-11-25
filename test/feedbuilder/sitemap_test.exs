@@ -1,4 +1,4 @@
-defmodule FeedbuilderTest do
+defmodule Feedbuilder.SitemapTest do
   use ExUnit.Case
   doctest Feedbuilder
 
@@ -105,8 +105,8 @@ defmodule FeedbuilderTest do
       end)
       |> Feedbuilder.generate(opts)
 
-    sitemap_00001_contents = File.read!(Path.join(__DIR__, "fixtures/sitemap-00001.xml"))
-    sitemap_index_contents = File.read!(Path.join(__DIR__, "fixtures/sitemap.xml"))
+    sitemap_00001_contents = File.read!(Path.join([__DIR__, "..", "fixtures/sitemap-00001.xml"]))
+    sitemap_index_contents = File.read!(Path.join([__DIR__, "..", "fixtures/sitemap.xml"]))
 
     assert Enum.count(elements) == 2
     assert Enum.at(elements, 0) |> elem(0) == "sitemap-00001.xml"
