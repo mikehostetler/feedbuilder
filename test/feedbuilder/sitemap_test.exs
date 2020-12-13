@@ -40,7 +40,7 @@ defmodule Feedbuilder.SitemapTest do
     assert Enum.at(elements, 0) |> elem(0) == "sitemap-00001.xml.gz"
     assert Enum.at(elements, 0) |> elem(1) |> IO.iodata_length() == 561
     assert Enum.at(elements, 1) |> elem(0) == "sitemap.xml.gz"
-    assert Enum.at(elements, 1) |> elem(1) |> IO.iodata_length() == 228
+    assert Enum.at(elements, 1) |> elem(1) |> IO.iodata_length() == 227
   end
 
   test "generate with 50,000 URLs" do
@@ -61,7 +61,7 @@ defmodule Feedbuilder.SitemapTest do
     assert Enum.at(elements, 0) |> elem(0) == "sitemap-00001.xml.gz"
     assert Enum.at(elements, 0) |> elem(1) |> IO.iodata_length() == 128_046
     assert Enum.at(elements, 1) |> elem(0) == "sitemap.xml.gz"
-    assert Enum.at(elements, 1) |> elem(1) |> IO.iodata_length() == 228
+    assert Enum.at(elements, 1) |> elem(1) |> IO.iodata_length() == 227
   end
 
   test "generate with 50,001 URLs" do

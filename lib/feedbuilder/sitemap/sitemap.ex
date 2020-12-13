@@ -81,13 +81,13 @@ defmodule Feedbuilder.Sitemap do
   end
 
   # Callback functions to generate a new Feed
-  def new_feed() do
+  def new_feed(_opts \\ %{}) do
     body = [@dec, @line_sep, @feed_start, @line_sep]
     length = IO.iodata_length(body)
     %File{count: 0, length: length, body: body}
   end
 
-  def add_feed_item(%File{count: count, length: length, body: body}, %Item{} = url) do
+  def add_feed_item(%File{count: count, length: length, body: body}, %Item{} = url, _opts \\ %{}) do
     element =
       url_element(url)
       |> XmlBuilder.generate()
@@ -109,7 +109,7 @@ defmodule Feedbuilder.Sitemap do
     end
   end
 
-  def finalize_feed(%File{count: count, length: length, body: body}) do
+  def finalize_feed(%File{count: count, length: length, body: body}, _opts \\ %{}) do
     new_body = [body, @feed_end, @line_sep]
     new_length = length + @feed_end_length
     %File{count: count, length: new_length, body: new_body}

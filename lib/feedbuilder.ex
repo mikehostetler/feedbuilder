@@ -4,7 +4,6 @@ defmodule Feedbuilder do
   It currently supports three feed formats:
 
   * [XML Sitemaps](https://www.sitemaps.org)
-  * [RSS 2.0](https://validator.w3.org/feed/docs/rss2.html)
   * [Google Merchant](https://support.google.com/merchants/answer/160567?hl=en&ref_topic=3163841)
 
   Inspiration and design was taken from [Sitemapper](https://github.com/tomtaylor/sitemapper).  Many thanks
@@ -25,12 +24,14 @@ defmodule Feedbuilder do
     name = Keyword.get(opts, :name)
     name_prefix = Keyword.get(opts, :name_prefix, "")
     gzip_enabled = Keyword.get(opts, :gzip, true)
+    index_enabled = Keyword.get(opts, :index, true)
 
     enum
     |> Stream.concat([:end])
     |> Stream.transform(nil, &accumulate_feed_item(&1, &2, generator, opts))
     |> Stream.transform(1, &reduce_file_to_name_and_body(&1, &2, name, name_prefix, gzip_enabled))
     |> Stream.concat([:end])
+    # |> Stream.map(&maybe_generate_index(&1, index_enabled))
     |> Stream.transform(nil, &accumulate_feed_index(&1, &2, generator, opts))
     |> Stream.map(&maybe_gzip_body(&1, gzip_enabled))
   end
@@ -85,20 +86,20 @@ defmodule Feedbuilder do
     {[], nil}
   end
 
-  defp accumulate_feed_item(:end, progress, generator, _opts) do
-    done = generator.finalize_feed(progress)
+  defp accumulate_feed_item(:end, progress, generator, opts) do
+    done = generator.finalize_feed(progress, opts)
     {[done], nil}
   end
 
   defp accumulate_feed_item(item, nil, generator, opts) do
-    accumulate_feed_item(item, generator.new_feed(), generator, opts)
+    accumulate_feed_item(item, generator.new_feed(opts), generator, opts)
   end
 
-  defp accumulate_feed_item(item, progress, generator, _opts) do
-    case generator.add_feed_item(progress, item) do
+  defp accumulate_feed_item(item, progress, generator, opts) do
+    case generator.add_feed_item(progress, item, opts) do
       {:error, reason} when reason in [:over_length, :over_count] ->
-        done = generator.finalize_feed(progress)
-        next = generator.new_feed() |> generator.add_feed_item(item)
+        done = generator.finalize_feed(progress, opts)
+        next = generator.new_feed(opts) |> generator.add_feed_item(item, opts)
         {[done], next}
 
       new_progress ->

@@ -19,9 +19,10 @@ defmodule Feedbuilder.MerchantTest do
 
   # test "generate Sitemap with complex URLs" do
   #   opts = [
-  #     generator: Feedbuilder.Sitemap,
+  #     generator: Feedbuilder.Merchant,
   #     base_url: "http://example.org/foo",
-  #     name_prefix: "sitemap"
+  #     name_prefix: "sitemap",
+  #     gzip: false
   #   ]
 
   #   elements =
@@ -37,11 +38,50 @@ defmodule Feedbuilder.MerchantTest do
   #     |> Feedbuilder.generate(opts)
 
   #   assert Enum.count(elements) == 2
-  #   assert Enum.at(elements, 0) |> elem(0) == "sitemap-00001.xml.gz"
+  #   assert Enum.at(elements, 0) |> elem(0) == "sitemap-00001.xml"
   #   assert Enum.at(elements, 0) |> elem(1) |> IO.iodata_length() == 561
-  #   assert Enum.at(elements, 1) |> elem(0) == "sitemap.xml.gz"
+  #   assert Enum.at(elements, 1) |> elem(0) == "sitemap.xml"
   #   assert Enum.at(elements, 1) |> elem(1) |> IO.iodata_length() == 228
   # end
+
+  test "generate and persist" do
+    store_path = File.cwd!() |> Path.join("test/store")
+    File.mkdir_p!(store_path)
+
+    opts = [
+      generator: Feedbuilder.Merchant,
+      feed_config: [
+        title: "Foo Bar Title",
+        link: "https://example.com",
+        description: "Google Merchant Feed Description"
+      ],
+      base_url: "http://example.org/foo",
+      name_prefix: "google_merchant",
+      store: Feedbuilder.FileStore,
+      store_config: [
+        path: store_path
+      ],
+      gzip: false,
+      index: false
+    ]
+
+    elements =
+      Stream.concat([1..50_002])
+      |> Stream.map(fn i ->
+        %Item{
+          id: "ID::#{i}",
+          title: "Title % #{i}",
+          description: {:cdata, "Description % #{i}"},
+          link: "http://example.com/#{i}",
+          image_link: "http://example.com/#{i}",
+          availability: :user
+        }
+      end)
+      |> Feedbuilder.generate(opts)
+      |> Feedbuilder.persist(opts)
+
+    assert Enum.count(elements) == 3
+  end
 
   # test "generate with 50,000 URLs" do
   #   opts = [

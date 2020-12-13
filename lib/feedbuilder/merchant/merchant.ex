@@ -11,29 +11,20 @@ defmodule Feedbuilder.Merchant do
   @line_sep "\n"
   @line_sep_length String.length(@line_sep)
 
-  @index_start "<sitemapindex xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/siteindex.xsd\" xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
-  @index_end "</sitemapindex>"
+  @index_start ""
+  @index_end ""
 
   @index_end_length String.length(@index_end) + @line_sep_length
   @index_max_length_offset @max_length - @index_end_length
 
-  @feed_start "<urlset xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd\" xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
-  @feed_end "</urlset>"
+  @feed_start "<rss xmlns:g=\"http://base.google.com/ns/1.0\" version=\"2.0\"><channel>"
+  @feed_end "</channel></rss>"
 
   @feed_end_length String.length(@feed_end) + @line_sep_length
   @feed_max_length_offset @max_length - @feed_end_length
 
-  @ping_urls [
-    "http://google.com/ping?sitemap=%s",
-    "http://www.bing.com/webmaster/ping.aspx?sitemap=%s"
-  ]
-
-  def ping(base_url) do
-    @ping_urls
-    |> Enum.map(fn url ->
-      ping_url = String.replace(url, "%s", base_url)
-      :httpc.request('#{ping_url}')
-    end)
+  def ping(_base_url) do
+    :ok
   end
 
   # Callback functions to generate a new Feed
@@ -81,15 +72,29 @@ defmodule Feedbuilder.Merchant do
   end
 
   # Callback functions to generate a new Feed
-  def new_feed() do
-    body = [@dec, @line_sep, @feed_start, @line_sep]
+  def new_feed(opts) do
+    feed_config = Keyword.get(opts, :feed_config, [])
+    title = Keyword.get(feed_config, :title, "")
+    link = Keyword.get(feed_config, :link, "")
+    description = Keyword.get(feed_config, :description, "")
+
+    channel_header =
+      [
+        XmlBuilder.element(:title, title),
+        XmlBuilder.element(:link, link),
+        XmlBuilder.element(:description, description)
+      ]
+      |> XmlBuilder.generate()
+
+    body = [@dec, @line_sep, @feed_start, @line_sep, channel_header, @line_sep]
+
     length = IO.iodata_length(body)
     %File{count: 0, length: length, body: body}
   end
 
-  def add_feed_item(%File{count: count, length: length, body: body}, %Item{} = url) do
+  def add_feed_item(%File{count: count, length: length, body: body}, %Item{} = item, _opts) do
     element =
-      url_element(url)
+      item_element(item)
       |> XmlBuilder.generate()
 
     element_length = IO.iodata_length(element)
@@ -109,26 +114,26 @@ defmodule Feedbuilder.Merchant do
     end
   end
 
-  def finalize_feed(%File{count: count, length: length, body: body}) do
+  def finalize_feed(%File{count: count, length: length, body: body}, _opts) do
     new_body = [body, @feed_end, @line_sep]
     new_length = length + @feed_end_length
     %File{count: count, length: new_length, body: new_body}
   end
 
-  defp url_element(%Item{} = url) do
+  defp item_element(%Item{} = item) do
     elements =
-      [:loc, :lastmod, :changefreq, :priority]
+      [:id, :title, :description, :link]
       |> Enum.reduce([], fn k, acc ->
-        case Map.get(url, k) do
+        case Map.get(item, k) do
           nil ->
             acc
 
           v ->
-            acc ++ [{k, Encoder.encode(v)}]
+            acc ++ [{"g:#{k}", Encoder.encode(v)}]
         end
       end)
 
-    XmlBuilder.element(:url, elements)
+    XmlBuilder.element(:item, elements)
   end
 
   defp sitemap_element(%Index{} = reference) do
