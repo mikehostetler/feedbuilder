@@ -11,8 +11,8 @@ defmodule Feedbuilder.Merchant do
   @line_sep "\n"
   @line_sep_length String.length(@line_sep)
 
-  @index_start ""
-  @index_end ""
+  @index_start "<sitemapindex xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/siteindex.xsd\" xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
+  @index_end "</sitemapindex>"
 
   @index_end_length String.length(@index_end) + @line_sep_length
   @index_max_length_offset @max_length - @index_end_length
